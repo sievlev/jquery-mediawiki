@@ -1,0 +1,28 @@
+{
+	"name": "jquery.mediawiki",
+	"title": "MediaWiki formatter",
+	"description": "Simple formatter for documents in MediaWiki format",
+	"version": "0.0.1",
+	"homepage": "https://github.com/sievlev/jquery-mediawiki",
+	"author": {
+		"name": "Stanislav Ievlev",
+		"email": "stanislav.ievlev@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/sievlev/jquery-mediawiki.git"
+	},
+	"scripts": {
+		"test": "grunt qunit"
+	},
+	"bugs": {
+		"url": "https://github.com/sievlev/jquery-mediawiki/issues"
+	},
+	"licenses": [{
+		"type": "MIT",
+		"url": "https://github.com/sievlev/jquery-mediawiki/blob/master/LICENSE.txt"
+	}],
+	"devDependencies": {
+		"grunt": "~0.3.16"
+	}
+}
