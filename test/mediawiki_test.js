@@ -28,6 +28,7 @@ test("heading, invalid sequences", function() {
 	tokenizeEqual("=a=", [["t", "=a="]]);
 	tokenizeEqual("=a=\r", [["t", "=a=\r"]]);
 	tokenizeEqual("=a=\r\r", [["t", "=a=\r\r"]]);
+	tokenizeEqual("t=a=\n", [["t", "t=a=\n"]]);
 	tokenizeEqual("=a\n", [["t", "=a\n"]]);
 	tokenizeEqual("=a\r\n", [["t", "=a\r\n"]]);
 	tokenizeEqual("a=\n", [["t", "a=\n"]]);
@@ -74,9 +75,28 @@ test("paragraph, short sequences", function() {
 });
 
 test("paragraph, long sequences", function() {
-	// long sequences
 	tokenizeEqual("\n\n\n", [["p"], ["b"]]);
 	tokenizeEqual("\n\n\n\n", [["p"], ["b"], ["p"]]);
+});
+
+test("list, wrong sequences", function() {
+	tokenizeEqual("a*b\n", [["t", "a*b\n"]]);
+	tokenizeEqual("a#b\n", [["t", "a#b\n"]]);
+	tokenizeEqual("*b", [["t", "*b"]]);
+	tokenizeEqual("*b\r", [["t", "*b\r"]]);
+	tokenizeEqual("#b", [["t", "#b"]]);
+	tokenizeEqual("#b\r", [["t", "#b\r"]]);
+});
+
+test("list, correct sequences", function() {
+	tokenizeEqual("*a\n", [["*", 1, "a"]]);
+	tokenizeEqual("**a\n", [["*", 2, "a"]]);
+	tokenizeEqual("#a\n", [["#", 1, "a"]]);
+	tokenizeEqual("##a\n", [["#", 2, "a"]]);
+	tokenizeEqual("*a\nt", [["*", 1, "a"], ["t", "t"]]);
+	tokenizeEqual("*a\n\nt", [["*", 1, "a"], ["p"], ["t", "t"]]);
+	tokenizeEqual("t\n*a\n", [["t", "t\n"], ["*", 1, "a"]]);
+	tokenizeEqual("t\n\n*a\n", [["t", "t"], ["p"], ["*", 1, "a"]]);
 });
 
 module("MediaWiki format");
@@ -88,10 +108,19 @@ function formatEqual(text, expected) {
 test("heading", function() {
 	formatEqual("==heading==\n","<h2>heading</h2>");
 	formatEqual("== heading ==\n","<h2>heading</h2>");
+	formatEqual("\n==heading==\n","<p>\n</p><h2>heading</h2>"); // FIXME?
+	formatEqual("\n\n==heading==\n","<h2>heading</h2>");
+	formatEqual("\n\n\n==heading==\n","<p><br></p><h2>heading</h2>");
 });
 
 test("paragraph", function() {
 	formatEqual("aaa", "<p>aaa</p>");
+	formatEqual("\naaa", "<p>\naaa</p>");
+	formatEqual("\n\naaa", "<p>aaa</p>");
+	formatEqual("\n\n\naaa", "<p><br>aaa</p>");
+	formatEqual("\n\n\n\naaa", "<p><br></p><p>aaa</p>");
+	formatEqual("\n\n\n\naaa", "<p><br></p><p>aaa</p>");
+	formatEqual("\n\n\n\n\naaa", "<p><br></p><p><br>aaa</p>");
 	formatEqual("aaa\nbbb", "<p>aaa\nbbb</p>");
 	formatEqual("aaa\n\nbbb", "<p>aaa</p><p>bbb</p>");
 	formatEqual("aaa\n\n\nbbb", "<p>aaa</p><p><br>bbb</p>");
@@ -101,8 +130,8 @@ test("paragraph", function() {
 
 test("paragraph and heading", function() {
 	formatEqual("message\n==heading==\n", "<p>message\n</p><h2>heading</h2>");
-	formatEqual("message\r==heading==\n", "<p>message\r</p><h2>heading</h2>");
-	formatEqual("message\n\n==heading==\n", "<p>message</p><h2>heading</h2>");
+	formatEqual("message\r==heading==\n", "<p>message\r==heading==\n</p>");
+	formatEqual("message1\n\n==heading==\n", "<p>message1</p><h2>heading</h2>");
 	formatEqual("message\n\n\n==heading==\n", "<p>message</p><p><br></p><h2>heading</h2>");
 	formatEqual("message\n\n\n\n==heading==\n", "<p>message</p><p><br></p><h2>heading</h2>");
 });
@@ -112,6 +141,48 @@ test("heading and paragraph", function() {
 	formatEqual("==heading==\r\nmessage", "<h2>heading</h2><p>message</p>");
 	formatEqual("==heading==\n\nmessage", "<h2>heading</h2><p>message</p>");
 	formatEqual("==heading==\r\n\r\nmessage", "<h2>heading</h2><p>message</p>");
+});
+
+test("list", function() {
+	formatEqual("*list\n", "<ul><li>list</li></ul>");
+	formatEqual("* list\n", "<ul><li>list</li></ul>");
+	formatEqual("*list\n", "<ul><li>list</li></ul>");
+	formatEqual("#list\n", "<ol><li>list</li></ol>");
+	formatEqual("*list1\n*list2\n", "<ul><li>list1</li><li>list2</li></ul>");
+	formatEqual("#list1\n#list2\n", "<ol><li>list1</li><li>list2</li></ol>");
+	formatEqual("*list1\n#list2\n", "<ul><li>list1</li></ul><ol><li>list2</li></ol>");
+	formatEqual("**list\n", "<ul><li><ul><li>list</li></ul></li></ul>");
+	formatEqual("##list\n", "<ol><li><ol><li>list</li></ol></li></ol>");
+	formatEqual("*list1\n**list2\n", "<ul><li>list1<ul><li>list2</li></ul></li></ul>");
+	formatEqual("*list1\n**list2\n*list3\n", "<ul><li>list1<ul><li>list2</li></ul></li><li>list3</li></ul>");
+	formatEqual("*list1\n##list2\n", "<ul><li>list1</li></ul><ol><li><ol><li>list2</li></ol></li></ol>");
+});
+
+test("list and paragraph", function() {
+	formatEqual("*list\nmessage", "<ul><li>list</li></ul><p>message</p>");
+	formatEqual("*list\n\nmessage", "<ul><li>list</li></ul><p>message</p>");
+	formatEqual("*list\n\n\nmessage", "<ul><li>list</li></ul><p><br>message</p>");
+});
+
+test("paragraph and list", function() {
+	formatEqual("message\n*list\n", "<p>message\n</p><ul><li>list</li></ul>");
+	formatEqual("message\n\n*list\n", "<p>message</p><ul><li>list</li></ul>");
+	formatEqual("message\n\n\n*list\n", "<p>message</p><p><br></p><ul><li>list</li></ul>");
+});
+
+test("list and heading", function() {
+	formatEqual("*list\n==heading==\n", "<ul><li>list</li></ul><h2>heading</h2>");
+	formatEqual("*list\n\n==heading==\n", "<ul><li>list</li></ul><h2>heading</h2>");
+	formatEqual("*list\n\n\n==heading==\n", "<ul><li>list</li></ul><p><br></p><h2>heading</h2>");
+	formatEqual("*list\n\n\n\n==heading==\n", "<ul><li>list</li></ul><p><br></p><h2>heading</h2>");
+	formatEqual("*list\n\n\n\n\n==heading==\n", "<ul><li>list</li></ul><p><br></p><p><br></p><h2>heading</h2>");
+});
+
+test("heading and list", function() {
+	formatEqual("==heading==\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
+	formatEqual("==heading==\r\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
+	formatEqual("==heading==\n\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
+	formatEqual("==heading==\r\n\r\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
 });
 
 }(jQuery));
