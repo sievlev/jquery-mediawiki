@@ -49,13 +49,13 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		return newline;
 	}
 
-	function handle_t(s_curr_pos) {
+	function handle_text(s_curr_pos) {
 		if (g_last_pos !== s_curr_pos) {
 			add_token(["t", str.substring(g_last_pos, s_curr_pos)], s_curr_pos);
 		}
 	}
 
-	function handle_h(s_curr_pos, newline) {
+	function handle_heading(s_curr_pos, newline) {
 		var open_tag = 0;
 		var close_tag = 0;
 
@@ -98,19 +98,19 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		newline = handle_newline(); // skip empty lines
 		if (newline) {
 			var level = Math.min(open_tag, close_tag);
-			handle_t(s_curr_pos);
+			handle_text(s_curr_pos);
 			add_token(["h", level, str.substring(g_last_pos + level, e_curr_pos - level) ], g_curr_pos);
 		}
 
 		return newline;
 	}
 
-	function handle_p(s_curr_pos, newline) {
+	function handle_paragraph(s_curr_pos, newline) {
 		// calculate newlines only if it was called after non-newline character
 		newline = newline || handle_newline();
 
 		if (newline > 1) {
-			handle_t(s_curr_pos);
+			handle_text(s_curr_pos);
 			for(var i=0;i<newline; ++i) {
 				if (i % 2 === 1) {
 					add_token(["p"], g_curr_pos);
@@ -122,7 +122,7 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		return newline;
 	}
 
-	function handle_l(s_curr_pos, newline) {
+	function handle_list(s_curr_pos, newline) {
 		var l_type = peek();
 		var l_depth = 0;
 
@@ -153,15 +153,15 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 
 		newline = handle_newline(); //skip empty lines
 		if (newline) {
-			handle_t(s_curr_pos);
+			handle_text(s_curr_pos);
 			add_token([l_type, l_depth, str.substring(g_last_pos + l_depth, e_curr_pos) ], g_curr_pos);
-			handle_p(g_curr_pos, newline);
+			handle_paragraph(g_curr_pos, newline);
 		}
 
 		return newline;
 	}
 
-	function handle_d(s_curr_pos, newline) {
+	function handle_default(s_curr_pos, newline) {
 		next();
 		return 0;
 	}
@@ -170,22 +170,22 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 	while(hasnext()) {
 		switch(peek()) {
 			case "=":
-				newline = handle_h(g_curr_pos, newline);
+				newline = handle_heading(g_curr_pos, newline);
 				break;
 			case "\r":
 			case "\n":
-				newline = handle_p(g_curr_pos, 0);
+				newline = handle_paragraph(g_curr_pos, 0);
 				break;
 			case "#":
 			case "*":
-				newline = handle_l(g_curr_pos, newline);
+				newline = handle_list(g_curr_pos, newline);
 				break;
 			default:
-				newline = handle_d(g_curr_pos, newline);
+				newline = handle_default(g_curr_pos, newline);
 				break;
 		}
 	}
-	handle_t(g_curr_pos);
+	handle_text(g_curr_pos);
 };
 
 $.mediawiki.format = function (text) {
@@ -208,11 +208,11 @@ $.mediawiki.format = function (text) {
 		return g_context.length?g_context[g_context.length - 1]:[null];
 	}
 
-	function handle_p(s_token) {
+	function handle_paragraph(s_token) {
 		close_ctx(null);
 	}
 
-	function handle_t(s_token) {
+	function handle_text(s_token) {
 		if (curr_ctx()[0] !== "p") {
 			close_ctx(null);
 			open_ctx(["p"]);
@@ -220,7 +220,7 @@ $.mediawiki.format = function (text) {
 		g_result.push(s_token[1]);
 	}
 
-	function handle_b(s_token) {
+	function handle_br(s_token) {
 		if (curr_ctx()[0] !== "p") {
 			close_ctx(null);
 			open_ctx(["p"]);
@@ -228,12 +228,12 @@ $.mediawiki.format = function (text) {
 		g_result.push("<br>");
 	}
 
-	function handle_h(s_token) {
+	function handle_heading(s_token) {
 		close_ctx(null);
 		g_result.push(["<h",s_token[1],">",$.trim(s_token[2]),"</h",s_token[1],">"].join(""));
 	}
 
-	function handle_l(s_token) {
+	function handle_list(s_token) {
 		var l_type = s_token[0];
 		var l_depth = s_token[1];
 		var l_text = s_token[2];
@@ -272,20 +272,20 @@ $.mediawiki.format = function (text) {
 	$.mediawiki.tokenize(text, function(token) {
 		switch (token[0]) {
 			case "p":
-				handle_p(token);
+				handle_paragraph(token);
 				break;
 			case "t":
-				handle_t(token);
+				handle_text(token);
 				break;
 			case "h":
-				handle_h(token);
+				handle_heading(token);
 				break;
 			case "b":
-				handle_b(token);
+				handle_br(token);
 				break;
 			case "*":
 			case "#":
-				handle_l(token);
+				handle_list(token);
 				break;
 			default:
 				throw new Error("invalid token");
