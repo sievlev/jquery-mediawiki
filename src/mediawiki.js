@@ -161,6 +161,38 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		return newline;
 	}
 
+	function handle_emphasize(s_curr_pos, newline) {
+		var e_level = 0;
+		while(hasnext()) {
+			if (peek() === "'") {
+				e_level++;
+				next();
+			} else {
+				break;
+			}
+		}
+
+		switch(e_level) {
+			case 1:
+				break;
+			case 2:
+			case 3:
+			case 5:
+				handle_text(s_curr_pos);
+				add_token(["'", e_level], g_curr_pos);
+				break;
+			case 4:
+				handle_text(s_curr_pos);
+				add_token(["'", 3], g_curr_pos-1);
+				break;
+			default: // > 5
+				handle_text(s_curr_pos);
+				add_token(["'", 5], g_curr_pos - e_level + 5);
+				break;
+		}
+		return 0;
+	}
+
 	function handle_default(s_curr_pos, newline) {
 		next();
 		return 0;
@@ -180,6 +212,9 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 			case "*":
 				newline = handle_list(g_curr_pos, newline);
 				break;
+			case "'":
+				newline = handle_emphasize(g_curr_pos, newline);
+				break;
 			default:
 				newline = handle_default(g_curr_pos, newline);
 				break;
@@ -187,6 +222,122 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 	}
 	handle_text(g_curr_pos);
 };
+
+$.mediawiki.autocorrect = function(callback) {
+	var stack = []; // stack of disbalanced items
+	var head = null; // head of list of unprocessing items
+	var tail = null; // tail of list of unprocessing items
+
+	function dump_tokens() {
+		var item = head;
+		while(item) {
+			var token = item.token;
+			if (token[0] == "'" && token[1] == 5) {
+				callback(["'", 3]);
+				callback(["'", 2]);
+			} else{
+				callback(token);
+			}
+			item = item.next;
+		}
+		head = tail = null;
+	}
+
+	function append_token(token) {
+		var item = { token: token, prev: tail, next: null };
+		if (head == null) {
+			head = item;
+		}
+		if (tail != null) {
+			tail.next = item;
+		}
+		tail = item;
+		return item;
+	}
+
+	function modify_token(item, tag1, tag2) {
+		item.token[1] = tag1
+		var item2 = { token: ["'", tag2], prev: item, next: item.next }
+		if (item.next) {
+			item.next.prev = item2;
+		}
+		item.next = item2;
+		if (item == tail) {
+			tail = item2;
+		}
+	}
+
+	function handle_emphasize(token) {
+		if (!stack.length) { // no unbalanced items
+			dump_tokens();
+			stack.push(append_token(token));
+			return;
+		}
+
+		var curr_tag = token[1];
+		var prev = stack[stack.length - 1]; // last unbalanced item
+		var prev_tag = prev.token[1];
+
+		if (prev_tag == curr_tag) {
+			if (prev_tag == 5) {
+				modify_token(prev, 3, 2);
+				append_token(["'", 2]);
+				append_token(["'", 3]);
+			} else {
+				append_token(token);
+			}
+			stack.pop();
+		} else {
+			if (prev_tag == 5) {
+				modify_token(prev, 5 - curr_tag, curr_tag);
+				append_token(["'", curr_tag]);
+			} else if (curr_tag == 5) {
+				append_token(["'", prev_tag]);
+				stack.pop();
+				var new_tag = 5 - prev_tag;
+				var new_curr = append_token(["'", new_tag]);
+				if (!stack.length || stack[stack.length-1].token[1] != new_tag) {
+					stack.push(new_curr);
+				} else {
+					stack.pop();
+				}
+			} else if (stack.length == 1) {
+				stack.push(append_token(token));
+			} else {
+				append_token(["'", prev_tag]);
+				stack.pop();
+				append_token(token);
+				stack.push(append_token(["'", prev_tag]));
+			}
+		}
+	}
+
+	return function(token) {
+		if (token == null) {
+			dump_tokens();
+			return;
+		}
+		switch(token[0]) {
+			case "h":
+			case "p":
+			case "*":
+			case "#":
+				dump_tokens();
+				callback(token);
+				break;
+			case "'":
+				handle_emphasize(token);
+				break;
+			default:
+				if (head != null) {
+					append_token(token);
+				} else {
+					callback(token);
+				}
+				break;
+		}
+	}
+}
 
 $.mediawiki.format = function (text) {
 	var g_context = []; // current global context, paragraph, ordered or unordered list,
@@ -213,7 +364,8 @@ $.mediawiki.format = function (text) {
 	}
 
 	function handle_text(s_token) {
-		if (curr_ctx()[0] !== "p") {
+		var c_tag = curr_ctx()[0];
+		if (c_tag !== "p" && c_tag !== "em" && c_tag !== "strong") {
 			close_ctx(null);
 			open_ctx(["p"]);
 		}
@@ -269,7 +421,35 @@ $.mediawiki.format = function (text) {
 		g_result.push($.trim(l_text));
 	}
 
-	$.mediawiki.tokenize(text, function(token) {
+	function handle_emphasize(s_token) {
+		var e_tag;
+		var other_tag;
+		switch(s_token[1]) {
+			case 2:
+				e_tag = "em";
+				other_tag = "strong";
+				break;
+			case 3:
+				e_tag = "strong";
+				other_tag = "em";
+				break;
+			default:
+				return; // ignore invalid emphasize tags
+		}
+
+		var c_tag = curr_ctx()[0];
+		if (c_tag == e_tag) {
+			close_ctx(1);
+		} else {
+			if (c_tag != "p" && c_tag != other_tag) {
+				close_ctx(null);
+				open_ctx(["p"]);
+			}
+			open_ctx([e_tag]);
+		}
+	}
+
+	var corrector = $.mediawiki.autocorrect(function(token) {
 		switch (token[0]) {
 			case "p":
 				handle_paragraph(token);
@@ -287,11 +467,16 @@ $.mediawiki.format = function (text) {
 			case "#":
 				handle_list(token);
 				break;
+			case "'":
+				handle_emphasize(token);
+				break;
 			default:
 				throw new Error("invalid token");
 		}
 	});
-	close_ctx(null);
+	$.mediawiki.tokenize(text, corrector);
+	corrector(null); // flush buffers
+	close_ctx(null); // finally close all active contexts
 
 	return g_result.join("");
 };

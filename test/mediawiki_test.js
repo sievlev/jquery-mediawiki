@@ -10,7 +10,7 @@ function tokenizeEqual(text, expected) {
 	$.mediawiki.tokenize(text, function(token) {
 		result.push(token);
 	});
-	return deepEqual(result, expected);
+	deepEqual(result, expected);
 }
 
 test("base, empty text", function() {
@@ -99,6 +99,72 @@ test("list, correct sequences", function() {
 	tokenizeEqual("t\n\n*a\n", [["t", "t"], ["p"], ["*", 1, "a"]]);
 });
 
+test("emphasize, correct sequences", function() {
+	tokenizeEqual("a''a", [["t", "a"], ["'", 2], ["t", "a"]]);
+	tokenizeEqual("a'''a", [["t", "a"], ["'", 3], ["t", "a"]]);
+	tokenizeEqual("a'''''a", [["t", "a"], ["'", 5], ["t", "a"]]);
+});
+
+test("emphasize, invalid sequences", function() {
+	tokenizeEqual("a'a", [["t", "a'a"]]);
+	tokenizeEqual("a''''a", [["t", "a"], ["'", 3], ["t", "'a"]]);
+	tokenizeEqual("a''''''a", [["t", "a"], ["'", 5], ["t", "'a"]]);
+	tokenizeEqual("a'''''''a", [["t", "a"], ["'", 5], ["t", "''a"]]);
+});
+
+
+module("MediaWiki autocorrect");
+
+function autocorrectEqual(tokens, expected) {
+	var result = [];
+
+	var corrector = $.mediawiki.autocorrect(function(token) {
+		result.push(token);
+	});
+
+	for(var i=0; i<tokens.length; ++i) {
+		corrector(tokens[i]);
+	}
+	corrector(null);
+	deepEqual(result, expected);
+}
+
+test("autocorrect, basic sequences", function() {
+	autocorrectEqual(
+		[["t", "a"]], [["t", "a"]]);
+	autocorrectEqual(
+		[["'", 2]], [["'", 2]]);
+	autocorrectEqual(
+		[["'", 2], ["p"]], [["'", 2], ["p"]]);
+	autocorrectEqual(
+		[["'", 2], ["t", "a"], ["'", 2]],
+		[["'", 2], ["t", "a"], ["'", 2]]);
+	autocorrectEqual(
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]],
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]])
+});
+
+test("autocorrect, incorrect sequences", function() {
+	autocorrectEqual(
+		[["'", 5], ["t", "a"], ["'", 5]],
+		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
+	autocorrectEqual(
+		[["'", 5], ["t", "a"], ["'", 3]],
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3]]);
+	autocorrectEqual(
+		[["'", 3], ["t", "a"], ["'", 5]],
+		[["'", 3], ["t", "a"], ["'", 3], ["'", 2]])
+	autocorrectEqual(
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 2]],
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["'", 3]])
+	autocorrectEqual(
+		[["'", 2], ["t", "a"], ["'", 5], ["t", "b"], ["'", 2]],
+		[["'", 2], ["t", "a"], ["'", 2], ["'", 3], ["t", "b"], ["'", 2]])
+	autocorrectEqual(
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 5], ["t", "c"], ["'", 3], ["t", "d"], ["'", 2]],
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["t", "c"], ["'", 3], ["t", "d"], ["'", 2]])
+});
+
 module("MediaWiki format");
 
 function formatEqual(text, expected) {
@@ -184,5 +250,33 @@ test("heading and list", function() {
 	formatEqual("==heading==\n\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
 	formatEqual("==heading==\r\n\r\n*list\n", "<h2>heading</h2><ul><li>list</li></ul>");
 });
+
+// TODO: optimize corrector, drop last empty tags
+test("emphasize (base)", function() {
+	formatEqual("a''italic''a", "<p>a<em>italic</em>a</p>");
+	formatEqual("''italic''", "<p><em>italic</em></p>");
+	formatEqual("''ita\nc''", "<p><em>ita\nc</em></p>");
+	formatEqual("''italic", "<p><em>italic</em></p>");
+	formatEqual("normal''", "<p>normal<em></em></p>");
+
+	formatEqual("a'''bold'''a", "<p>a<strong>bold</strong>a</p>");
+	formatEqual("'''bold'''", "<p><strong>bold</strong></p>");
+	formatEqual("'''b\nd'''", "<p><strong>b\nd</strong></p>");
+	formatEqual("'''bold", "<p><strong>bold</strong></p>");
+	formatEqual("normal'''", "<p>normal<strong></strong></p>");
+
+	formatEqual("a'''''bold-italic'''''a", "<p>a<strong><em>bold-italic</em></strong>a</p>");
+	formatEqual("'''''bold-italic'''''", "<p><strong><em>bold-italic</em></strong></p>");
+	formatEqual("'''''bol\nitalic'''''", "<p><strong><em>bol\nitalic</em></strong></p>");
+	formatEqual("'''''bold-italic", "<p><strong><em>bold-italic</em></strong></p>");
+	formatEqual("normal'''''", "<p>normal<strong><em></em></strong></p>");
+
+	formatEqual("a''b'''c'''b''a", "<p>a<em>b<strong>c</strong>b</em>a</p>");
+	formatEqual("a'''b''c''b'''a", "<p>a<strong>b<em>c</em>b</strong>a</p>");
+});
+
+// TODO emphasize (autocorrection)
+// TODO emphasize and paragraph
+// TODO emphasize and heading
 
 }(jQuery));
