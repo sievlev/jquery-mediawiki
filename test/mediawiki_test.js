@@ -284,6 +284,11 @@ test("emphasize (base)", function() {
 
 	formatEqual("a''b'''c'''b''a", "<p>a<em>b<strong>c</strong>b</em>a</p>");
 	formatEqual("a'''b''c''b'''a", "<p>a<strong>b<em>c</em>b</strong>a</p>");
+
+	formatEqual("''''a''''", "<p><strong>'a</strong>'</p>");
+
+	formatEqual("''''''a''''''", "<p><strong><em>'a</em></strong>'</p>");
+	formatEqual("'''''''a'''''''", "<p><strong><em>''a</em></strong>''</p>");
 });
 
 test("emphasize (correction)", function() {
