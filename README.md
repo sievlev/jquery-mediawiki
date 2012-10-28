@@ -1,7 +1,11 @@
 jquery-mediawiki
 ================
 
-Simple formatter for documents in MediaWiki format
+Simple formatter for documents in MediaWiki format.
+
+This is a simple transformer of input sequence to html text
+without intermediate DOM tree.
+Main goal is to make parser as simple as possible.
 
 Supported:
  * heading
