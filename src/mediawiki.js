@@ -111,12 +111,9 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 
 		if (newline > 1) {
 			handle_text(s_curr_pos);
-			for(var i=0;i<newline; ++i) {
-				if (i % 2 === 1) {
-					add_token(["p"], g_curr_pos);
-				} else if (i > 0) {
-					add_token(["b"], g_curr_pos);
-				}
+			add_token(["p"], g_curr_pos);
+			if (newline > 2) {
+				add_token(["b", newline - 2], g_curr_pos);
 			}
 		}
 		return newline;
@@ -377,7 +374,7 @@ $.mediawiki.format = function (text) {
 			close_ctx(null);
 			open_ctx(["p"]);
 		}
-		g_result.push("<br>");
+		g_result.push(new Array(s_token[1] + 1).join("<br>"));
 	}
 
 	function handle_heading(s_token) {
