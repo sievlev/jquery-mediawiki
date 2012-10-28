@@ -225,21 +225,6 @@ $.mediawiki.autocorrect = function(callback) {
 	var head = null; // head of list of unprocessing items
 	var tail = null; // tail of list of unprocessing items
 
-	function dump_tokens() {
-		var item = head;
-		while(item) {
-			var token = item.token;
-			if (token[0] == "'" && token[1] == 5) {
-				callback(["'", 3]);
-				callback(["'", 2]);
-			} else{
-				callback(token);
-			}
-			item = item.next;
-		}
-		head = tail = null;
-	}
-
 	function append_token(token) {
 		var item = { token: token, prev: tail, next: null };
 		if (head == null) {
@@ -250,6 +235,38 @@ $.mediawiki.autocorrect = function(callback) {
 		}
 		tail = item;
 		return item;
+	}
+
+	function dump_tokens() {
+		// automatically drop last unclosed tokens
+		// automatically close other unclosed tokens
+		while(stack.length != 0) {
+			var last = stack.pop();
+			if (!last.next) {
+				tail = last.prev;
+				if (tail) {
+					tail.next = null;
+				} else {
+					head = null;
+				}
+			} else {
+				var l_tag = last.token[1];
+				if (l_tag == 5) {
+					modify_token(last, 3, 2);
+					append_token(["'", 2]);
+					append_token(["'", 3]);
+				} else {
+					append_token(["'", l_tag]);
+				}
+			}
+		}
+
+		var item = head;
+		while(item) {
+			callback(item.token);
+			item = item.next;
+		}
+		head = tail = null;
 	}
 
 	function modify_token(item, tag1, tag2) {

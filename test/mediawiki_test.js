@@ -112,7 +112,6 @@ test("emphasize, invalid sequences", function() {
 	tokenizeEqual("a'''''''a", [["t", "a"], ["'", 5], ["t", "''a"]]);
 });
 
-
 module("MediaWiki autocorrect");
 
 function autocorrectEqual(tokens, expected) {
@@ -133,10 +132,6 @@ test("autocorrect, basic sequences", function() {
 	autocorrectEqual(
 		[["t", "a"]], [["t", "a"]]);
 	autocorrectEqual(
-		[["'", 2]], [["'", 2]]);
-	autocorrectEqual(
-		[["'", 2], ["p"]], [["'", 2], ["p"]]);
-	autocorrectEqual(
 		[["'", 2], ["t", "a"], ["'", 2]],
 		[["'", 2], ["t", "a"], ["'", 2]]);
 	autocorrectEqual(
@@ -144,25 +139,39 @@ test("autocorrect, basic sequences", function() {
 		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]])
 });
 
+test("autocorrect, autoclose and autodrop", function() {
+	autocorrectEqual(
+		[["t", "a"], ["'", 2]], [["t", "a"]]);
+	autocorrectEqual(
+		[["'", 2], ["t", "a"]],
+		[["'", 2], ["t", "a"], ["'", 2]]);
+	autocorrectEqual(
+		[["'", 2], ["t", "a"], ["'", 3]],
+		[["'", 2], ["t", "a"], ["'", 2]]);
+	autocorrectEqual(
+		[["'", 5], ["t", "a"]],
+		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
+})
+
 test("autocorrect, incorrect sequences", function() {
 	autocorrectEqual(
 		[["'", 5], ["t", "a"], ["'", 5]],
 		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
 	autocorrectEqual(
-		[["'", 5], ["t", "a"], ["'", 3]],
-		[["'", 2], ["'", 3], ["t", "a"], ["'", 3]]);
+		[["'", 5], ["t", "a"], ["'", 3], ["'", 2]],
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]]);
 	autocorrectEqual(
-		[["'", 3], ["t", "a"], ["'", 5]],
-		[["'", 3], ["t", "a"], ["'", 3], ["'", 2]])
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 5]],
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]]);
 	autocorrectEqual(
-		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 2]],
-		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["'", 3]])
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 2], ["t", "c"], ["'", 3]],
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["'", 3], ["t", "c"], ["'", 3]]);
 	autocorrectEqual(
-		[["'", 2], ["t", "a"], ["'", 5], ["t", "b"], ["'", 2]],
-		[["'", 2], ["t", "a"], ["'", 2], ["'", 3], ["t", "b"], ["'", 2]])
+		[["'", 3], ["'", 2], ["t", "a"], ["'", 5], ["t", "b"], ["'", 2]],
+		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3], ["t", "b"]]);
 	autocorrectEqual(
 		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 5], ["t", "c"], ["'", 3], ["t", "d"], ["'", 2]],
-		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["t", "c"], ["'", 3], ["t", "d"], ["'", 2]])
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["t", "c"], ["'", 3], ["t", "d"], ["'", 3]])
 });
 
 module("MediaWiki format");
@@ -255,27 +264,34 @@ test("emphasize (base)", function() {
 	formatEqual("a''italic''a", "<p>a<em>italic</em>a</p>");
 	formatEqual("''italic''", "<p><em>italic</em></p>");
 	formatEqual("''ita\nc''", "<p><em>ita\nc</em></p>");
+	formatEqual("''a\n\nb''c", "<p><em>a</em></p><p>b<em>c</em></p>");
 	formatEqual("''italic", "<p><em>italic</em></p>");
-	formatEqual("normal''", "<p>normal<em></em></p>");
+	formatEqual("normal''", "<p>normal</p>");
 
 	formatEqual("a'''bold'''a", "<p>a<strong>bold</strong>a</p>");
 	formatEqual("'''bold'''", "<p><strong>bold</strong></p>");
 	formatEqual("'''b\nd'''", "<p><strong>b\nd</strong></p>");
+	formatEqual("'''a\n\nb'''c", "<p><strong>a</strong></p><p>b<strong>c</strong></p>");
 	formatEqual("'''bold", "<p><strong>bold</strong></p>");
-	formatEqual("normal'''", "<p>normal<strong></strong></p>");
+	formatEqual("normal'''", "<p>normal</p>");
 
 	formatEqual("a'''''bold-italic'''''a", "<p>a<strong><em>bold-italic</em></strong>a</p>");
 	formatEqual("'''''bold-italic'''''", "<p><strong><em>bold-italic</em></strong></p>");
 	formatEqual("'''''bol\nitalic'''''", "<p><strong><em>bol\nitalic</em></strong></p>");
+	formatEqual("'''''a\n\nb'''''c", "<p><strong><em>a</em></strong></p><p>b<strong><em>c</em></strong></p>");
 	formatEqual("'''''bold-italic", "<p><strong><em>bold-italic</em></strong></p>");
-	formatEqual("normal'''''", "<p>normal<strong><em></em></strong></p>");
+	formatEqual("normal'''''", "<p>normal</p>");
 
 	formatEqual("a''b'''c'''b''a", "<p>a<em>b<strong>c</strong>b</em>a</p>");
 	formatEqual("a'''b''c''b'''a", "<p>a<strong>b<em>c</em>b</strong>a</p>");
 });
 
-// TODO emphasize (autocorrection)
-// TODO emphasize and paragraph
-// TODO emphasize and heading
+test("emphasize (correction)", function() {
+	formatEqual("'''''a''b'''c", "<p><strong><em>a</em>b</strong>c</p>");
+	formatEqual("'''''a'''b''c", "<p><em><strong>a</strong>b</em>c</p>");
+	formatEqual("''a'''b'''''c", "<p><em>a<strong>b</strong></em>c</p>");
+	formatEqual("'''a''b'''''c", "<p><strong>a<em>b</em></strong>c</p>");
+	formatEqual("'''a''b'''c", "<p><strong>a<em>b</em></strong><em>c</em></p>");
+});
 
 }(jQuery));
