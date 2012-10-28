@@ -304,6 +304,7 @@ $.mediawiki.autocorrect = function(callback) {
 				append_token(["'", prev_tag]);
 				stack.pop();
 				append_token(token);
+				stack.pop();
 				stack.push(append_token(["'", prev_tag]));
 			}
 		}
