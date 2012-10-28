@@ -136,7 +136,7 @@ test("autocorrect, basic sequences", function() {
 		[["'", 2], ["t", "a"], ["'", 2]]);
 	autocorrectEqual(
 		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]],
-		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]])
+		[["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]]);
 });
 
 test("autocorrect, autoclose and autodrop", function() {
@@ -151,7 +151,7 @@ test("autocorrect, autoclose and autodrop", function() {
 	autocorrectEqual(
 		[["'", 5], ["t", "a"]],
 		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
-})
+});
 
 test("autocorrect, incorrect sequences", function() {
 	autocorrectEqual(
@@ -171,7 +171,7 @@ test("autocorrect, incorrect sequences", function() {
 		[["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3], ["t", "b"]]);
 	autocorrectEqual(
 		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 5], ["t", "c"], ["'", 3], ["t", "d"], ["'", 2]],
-		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["t", "c"], ["'", 3], ["t", "d"], ["'", 3]])
+		[["'", 2], ["t", "a"], ["'", 3], ["t", "b"], ["'", 3], ["'", 2], ["t", "c"], ["'", 3], ["t", "d"], ["'", 3]]);
 });
 
 module("MediaWiki format");

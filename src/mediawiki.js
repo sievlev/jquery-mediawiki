@@ -240,7 +240,7 @@ $.mediawiki.autocorrect = function(callback) {
 	function dump_tokens() {
 		// automatically drop last unclosed tokens
 		// automatically close other unclosed tokens
-		while(stack.length != 0) {
+		while(stack.length) {
 			var last = stack.pop();
 			if (!last.next) {
 				tail = last.prev;
@@ -251,7 +251,7 @@ $.mediawiki.autocorrect = function(callback) {
 				}
 			} else {
 				var l_tag = last.token[1];
-				if (l_tag == 5) {
+				if (l_tag === 5) {
 					modify_token(last, 3, 2);
 					append_token(["'", 2]);
 					append_token(["'", 3]);
@@ -270,13 +270,13 @@ $.mediawiki.autocorrect = function(callback) {
 	}
 
 	function modify_token(item, tag1, tag2) {
-		item.token[1] = tag1
-		var item2 = { token: ["'", tag2], prev: item, next: item.next }
+		item.token[1] = tag1;
+		var item2 = { token: ["'", tag2], prev: item, next: item.next };
 		if (item.next) {
 			item.next.prev = item2;
 		}
 		item.next = item2;
-		if (item == tail) {
+		if (item === tail) {
 			tail = item2;
 		}
 	}
@@ -292,8 +292,8 @@ $.mediawiki.autocorrect = function(callback) {
 		var prev = stack[stack.length - 1]; // last unbalanced item
 		var prev_tag = prev.token[1];
 
-		if (prev_tag == curr_tag) {
-			if (prev_tag == 5) {
+		if (prev_tag === curr_tag) {
+			if (prev_tag === 5) {
 				modify_token(prev, 3, 2);
 				append_token(["'", 2]);
 				append_token(["'", 3]);
@@ -302,20 +302,20 @@ $.mediawiki.autocorrect = function(callback) {
 			}
 			stack.pop();
 		} else {
-			if (prev_tag == 5) {
+			if (prev_tag === 5) {
 				modify_token(prev, 5 - curr_tag, curr_tag);
 				append_token(["'", curr_tag]);
-			} else if (curr_tag == 5) {
+			} else if (curr_tag === 5) {
 				append_token(["'", prev_tag]);
 				stack.pop();
 				var new_tag = 5 - prev_tag;
 				var new_curr = append_token(["'", new_tag]);
-				if (!stack.length || stack[stack.length-1].token[1] != new_tag) {
+				if (!stack.length || stack[stack.length-1].token[1] !== new_tag) {
 					stack.push(new_curr);
 				} else {
 					stack.pop();
 				}
-			} else if (stack.length == 1) {
+			} else if (stack.length === 1) {
 				stack.push(append_token(token));
 			} else {
 				append_token(["'", prev_tag]);
@@ -351,8 +351,8 @@ $.mediawiki.autocorrect = function(callback) {
 				}
 				break;
 		}
-	}
-}
+	};
+};
 
 $.mediawiki.format = function (text) {
 	var g_context = []; // current global context, paragraph, ordered or unordered list,
@@ -453,10 +453,10 @@ $.mediawiki.format = function (text) {
 		}
 
 		var c_tag = curr_ctx()[0];
-		if (c_tag == e_tag) {
+		if (c_tag === e_tag) {
 			close_ctx(1);
 		} else {
-			if (c_tag != "p" && c_tag != other_tag) {
+			if (c_tag !== "p" && c_tag !== other_tag) {
 				close_ctx(null);
 				open_ctx(["p"]);
 			}
