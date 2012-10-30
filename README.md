@@ -10,15 +10,13 @@ Main goal is to make parser as simple as possible.
 Supported:
  * heading
  * paragraph
- * ordered and unordered lists, including nested lists
+ * ordered and unordered lists, including nested lists and mixed lists (unordered inside ordered and vice versa)
  * emphasize
 
 TODO:
  * drop '\n' symbols at the start of document
- * automatic 'p' insertion in autocorrector
  * quote '>' and '&' symbols
  * support comments
- * support hybrid nested lists ( *# ... )
  * links to images
  * support both string buffer and FileReader
  * Ajax sample
