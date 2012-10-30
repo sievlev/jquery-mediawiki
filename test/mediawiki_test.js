@@ -128,7 +128,21 @@ function autocorrectEqual(tokens, expected) {
 	deepEqual(result, expected);
 }
 
-test("autocorrect, basic sequences", function() {
+test("paragraph", function() {
+	autocorrectEqual(
+		[["t", "a"]], [["p"], ["t", "a"]]);
+	autocorrectEqual(
+		[["h", 2, "a"], ["t", "a"]],
+		[["h", 2, "a"], ["p"], ["t", "a"]]);
+	autocorrectEqual(
+		[["*", 2, "a"], ["t", "a"]],
+		[["*", 2, "a"], ["p"], ["t", "a"]]);
+	autocorrectEqual(
+		[["#", 2, "a"], ["t", "a"]],
+		[["#", 2, "a"], ["p"], ["t", "a"]]);
+});
+
+test("emphasize, basic sequences", function() {
 	autocorrectEqual(
 		[["p"], ["t", "a"]], [["p"], ["t", "a"]]);
 	autocorrectEqual(
@@ -139,7 +153,7 @@ test("autocorrect, basic sequences", function() {
 		[["p"], ["'", 2], ["'", 3], ["t", "a"], ["'", 3], ["'", 2]]);
 });
 
-test("autocorrect, autoclose and autodrop", function() {
+test("emphasize, autoclose and autodrop", function() {
 	autocorrectEqual(
 		[["p"], ["t", "a"], ["'", 2]], [["p"], ["t", "a"]]);
 	autocorrectEqual(
@@ -153,7 +167,7 @@ test("autocorrect, autoclose and autodrop", function() {
 		[["p"], ["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
 });
 
-test("autocorrect, incorrect sequences", function() {
+test("emphasize, incorrect sequences", function() {
 	autocorrectEqual(
 		[["p"], ["'", 5], ["t", "a"], ["'", 5]],
 		[["p"], ["'", 3], ["'", 2], ["t", "a"], ["'", 2], ["'", 3]]);
