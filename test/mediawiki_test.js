@@ -89,14 +89,14 @@ test("list, wrong sequences", function() {
 });
 
 test("list, correct sequences", function() {
-	tokenizeEqual("*a\n", [["*", 1, "a"]]);
-	tokenizeEqual("**a\n", [["*", 2, "a"]]);
-	tokenizeEqual("#a\n", [["#", 1, "a"]]);
-	tokenizeEqual("##a\n", [["#", 2, "a"]]);
-	tokenizeEqual("*a\nt", [["*", 1, "a"], ["t", "t"]]);
-	tokenizeEqual("*a\n\nt", [["*", 1, "a"], ["p"], ["t", "t"]]);
-	tokenizeEqual("t\n*a\n", [["t", "t\n"], ["*", 1, "a"]]);
-	tokenizeEqual("t\n\n*a\n", [["t", "t"], ["p"], ["*", 1, "a"]]);
+	tokenizeEqual("*a\n", [["*", "a"]]);
+	tokenizeEqual("**a\n", [["**","a"]]);
+	tokenizeEqual("#a\n", [["#", "a"]]);
+	tokenizeEqual("##a\n", [["##", "a"]]);
+	tokenizeEqual("*a\nt", [["*", "a"], ["t", "t"]]);
+	tokenizeEqual("*a\n\nt", [["*", "a"], ["p"], ["t", "t"]]);
+	tokenizeEqual("t\n*a\n", [["t", "t\n"], ["*", "a"]]);
+	tokenizeEqual("t\n\n*a\n", [["t", "t"], ["p"], ["*", "a"]]);
 });
 
 test("emphasize, correct sequences", function() {
@@ -135,11 +135,11 @@ test("paragraph", function() {
 		[["h", 2, "a"], ["t", "a"]],
 		[["h", 2, "a"], ["p"], ["t", "a"]]);
 	autocorrectEqual(
-		[["*", 2, "a"], ["t", "a"]],
-		[["*", 2, "a"], ["p"], ["t", "a"]]);
+		[["*", "a"], ["t", "a"]],
+		[["*", "a"], ["p"], ["t", "a"]]);
 	autocorrectEqual(
-		[["#", 2, "a"], ["t", "a"]],
-		[["#", 2, "a"], ["p"], ["t", "a"]]);
+		[["#", "a"], ["t", "a"]],
+		[["#", "a"], ["p"], ["t", "a"]]);
 });
 
 test("emphasize, basic sequences", function() {
@@ -232,7 +232,6 @@ test("heading and paragraph", function() {
 });
 
 test("list", function() {
-	formatEqual("*list\n", "<ul><li>list</li></ul>");
 	formatEqual("* list\n", "<ul><li>list</li></ul>");
 	formatEqual("*list\n", "<ul><li>list</li></ul>");
 	formatEqual("#list\n", "<ol><li>list</li></ol>");
@@ -242,8 +241,11 @@ test("list", function() {
 	formatEqual("**list\n", "<ul><li><ul><li>list</li></ul></li></ul>");
 	formatEqual("##list\n", "<ol><li><ol><li>list</li></ol></li></ol>");
 	formatEqual("*list1\n**list2\n", "<ul><li>list1<ul><li>list2</li></ul></li></ul>");
+	formatEqual("*list1\n*#list2\n", "<ul><li>list1<ol><li>list2</li></ol></li></ul>");
+	formatEqual("#list1\n#*list2\n", "<ol><li>list1<ul><li>list2</li></ul></li></ol>");
 	formatEqual("*list1\n**list2\n*list3\n", "<ul><li>list1<ul><li>list2</li></ul></li><li>list3</li></ul>");
 	formatEqual("*list1\n##list2\n", "<ul><li>list1</li></ul><ol><li><ol><li>list2</li></ol></li></ol>");
+	formatEqual("**list1\n#list2\n", "<ul><li><ul><li>list1</li></ul></li></ul><ol><li>list2</li></ol>");
 });
 
 test("list and paragraph", function() {

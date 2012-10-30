@@ -120,18 +120,17 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 	}
 
 	function handle_list(s_curr_pos, newline) {
-		var l_type = peek();
-		var l_depth = 0;
-
+		var ch;
 		// always eat control symbols to avoid second call of handler
 		while(hasnext()) {
-			if (peek() === l_type) {
-				l_depth++;
+			ch = peek();
+			if (ch === '#' || ch === '*') {
 				next();
 			} else {
 				break;
 			}
 		}
+		var l_curr_pos = g_curr_pos; // end position of the markers
 
 		// no at start of the line
 		if (!newline) {
@@ -139,7 +138,7 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		}
 
 		while(hasnext()) {
-			var ch = peek();
+			ch = peek();
 			if (ch === "\n" || ch === "\r") {
 				break;
 			} else {
@@ -151,7 +150,7 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 		newline = handle_newline(); //skip empty lines
 		if (newline) {
 			handle_text(s_curr_pos);
-			add_token([l_type, l_depth, str.substring(g_last_pos + l_depth, e_curr_pos) ], g_curr_pos);
+			add_token([str.substring(g_last_pos, l_curr_pos), str.substring(l_curr_pos, e_curr_pos) ], g_curr_pos);
 			handle_paragraph(g_curr_pos, newline);
 		}
 
@@ -333,7 +332,7 @@ $.mediawiki.autocorrect = function(callback) {
 			dump_tokens();
 			return;
 		}
-		var token_type = token[0];
+		var token_type = token[0][0];
 		switch(token_type) {
 			// block tokens
 			case "h":
@@ -410,35 +409,39 @@ $.mediawiki.format = function (text) {
 
 	function handle_list(s_token) {
 		var l_type = s_token[0];
-		var l_depth = s_token[1];
-		var l_text = s_token[2];
-
-		var block = [(l_type === "*")?"ul":"ol"];
+		var l_text = s_token[1];
+		var level;
 
 		var ctx = curr_ctx();
-		var c_depth;
-		if (ctx[0] === "li" && ctx[1] === l_type) {
-			c_depth = ctx[2];
-			if (c_depth >= l_depth) {
-				while(c_depth > l_depth) {
-					close_ctx(2);
-					c_depth--;
-				}
-				close_ctx(1);
-				open_ctx(["li", l_type, l_depth]);
-			} else {
-				while(c_depth < l_depth) {
-					open_ctx(block);
-					open_ctx(["li", l_type, ++c_depth]);
+		if (ctx[0] === "li") {
+			var c_type = ctx[1];
+			var common_prefix = 0;
+			var common_length = Math.min(c_type.length, l_type.length);
+
+			for(common_prefix = 0; common_prefix < common_length; ++common_prefix) {
+				if (c_type[common_prefix] !== l_type[common_prefix]) {
+					break;
 				}
 			}
+			for(level=c_type.length; level > common_prefix; --level) {
+				close_ctx(2);
+			}
+			if (l_type.length <= common_prefix) {
+				close_ctx(1);
+			}
+			for(level=common_prefix; level < l_type.length; ++level) {
+				open_ctx([(l_type[level] === "*")?"ul":"ol"]);
+				open_ctx(["li", l_type]);
+			}
+			if (l_type.length === common_prefix) {
+				open_ctx(["li", l_type]);
+			}
 		} else {
-			c_depth = 0;
 			close_ctx(null);
-			do {
-				open_ctx(block);
-				open_ctx(["li", l_type, ++c_depth]);
-			} while(c_depth !== l_depth);
+			for(level=0; level < l_type.length; ++level) {
+				open_ctx([(l_type[level] === "*")?"ul":"ol"]);
+				open_ctx(["li", l_type]);
+			}
 		}
 
 		g_result.push($.trim(l_text));
@@ -469,7 +472,7 @@ $.mediawiki.format = function (text) {
 	}
 
 	var corrector = $.mediawiki.autocorrect(function(token) {
-		switch (token[0]) {
+		switch (token[0][0]) {
 			case "p":
 				handle_paragraph(token);
 				break;
