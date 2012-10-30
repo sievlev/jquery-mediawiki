@@ -221,33 +221,33 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 };
 
 $.mediawiki.autocorrect = function(callback) {
-	var stack = []; // stack of disbalanced items
-	var head = null; // head of list of unprocessing items
-	var tail = null; // tail of list of unprocessing items
+	var g_stack = []; // stack of disbalanced items
+	var g_head = null; // head of list of unprocessing items
+	var g_tail = null; // tail of list of unprocessing items
 
 	function append_token(token) {
-		var item = { token: token, prev: tail, next: null };
-		if (head == null) {
-			head = item;
+		var item = { token: token, prev: g_tail, next: null };
+		if (g_head == null) {
+			g_head = item;
 		}
-		if (tail != null) {
-			tail.next = item;
+		if (g_tail != null) {
+			g_tail.next = item;
 		}
-		tail = item;
+		g_tail = item;
 		return item;
 	}
 
 	function dump_tokens() {
 		// automatically drop last unclosed tokens
 		// automatically close other unclosed tokens
-		while(stack.length) {
-			var last = stack.pop();
+		while(g_stack.length) {
+			var last = g_stack.pop();
 			if (!last.next) {
-				tail = last.prev;
-				if (tail) {
-					tail.next = null;
+				g_tail = last.prev;
+				if (g_tail) {
+					g_tail.next = null;
 				} else {
-					head = null;
+					g_head = null;
 				}
 			} else {
 				var l_tag = last.token[1];
@@ -261,12 +261,12 @@ $.mediawiki.autocorrect = function(callback) {
 			}
 		}
 
-		var item = head;
+		var item = g_head;
 		while(item) {
 			callback(item.token);
 			item = item.next;
 		}
-		head = tail = null;
+		g_head = g_tail = null;
 	}
 
 	function modify_token(item, tag1, tag2) {
@@ -276,20 +276,20 @@ $.mediawiki.autocorrect = function(callback) {
 			item.next.prev = item2;
 		}
 		item.next = item2;
-		if (item === tail) {
-			tail = item2;
+		if (item === g_tail) {
+			g_tail = item2;
 		}
 	}
 
 	function handle_emphasize(token) {
-		if (!stack.length) { // no unbalanced items
+		if (!g_stack.length) { // no unbalanced items
 			dump_tokens();
-			stack.push(append_token(token));
+			g_stack.push(append_token(token));
 			return;
 		}
 
 		var curr_tag = token[1];
-		var prev = stack[stack.length - 1]; // last unbalanced item
+		var prev = g_stack[g_stack.length - 1]; // last unbalanced item
 		var prev_tag = prev.token[1];
 
 		if (prev_tag === curr_tag) {
@@ -300,29 +300,29 @@ $.mediawiki.autocorrect = function(callback) {
 			} else {
 				append_token(token);
 			}
-			stack.pop();
+			g_stack.pop();
 		} else {
 			if (prev_tag === 5) {
 				modify_token(prev, 5 - curr_tag, curr_tag);
 				append_token(["'", curr_tag]);
 			} else if (curr_tag === 5) {
 				append_token(["'", prev_tag]);
-				stack.pop();
+				g_stack.pop();
 				var new_tag = 5 - prev_tag;
 				var new_curr = append_token(["'", new_tag]);
-				if (!stack.length || stack[stack.length-1].token[1] !== new_tag) {
-					stack.push(new_curr);
+				if (!g_stack.length || g_stack[g_stack.length-1].token[1] !== new_tag) {
+					g_stack.push(new_curr);
 				} else {
-					stack.pop();
+					g_stack.pop();
 				}
-			} else if (stack.length === 1) {
-				stack.push(append_token(token));
+			} else if (g_stack.length === 1) {
+				g_stack.push(append_token(token));
 			} else {
 				append_token(["'", prev_tag]);
-				stack.pop();
+				g_stack.pop();
 				append_token(token);
-				stack.pop();
-				stack.push(append_token(["'", prev_tag]));
+				g_stack.pop();
+				g_stack.push(append_token(["'", prev_tag]));
 			}
 		}
 	}
@@ -344,7 +344,7 @@ $.mediawiki.autocorrect = function(callback) {
 				handle_emphasize(token);
 				break;
 			default:
-				if (head != null) {
+				if (g_head != null) {
 					append_token(token);
 				} else {
 					callback(token);
