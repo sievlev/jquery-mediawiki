@@ -449,22 +449,18 @@ $.mediawiki.format = function (text) {
 
 	function handle_emphasize(s_token) {
 		var e_tag;
-		var other_tag;
 		switch(s_token[1]) {
 			case 2:
 				e_tag = "em";
-				other_tag = "strong";
 				break;
 			case 3:
 				e_tag = "strong";
-				other_tag = "em";
 				break;
 			default:
 				return; // ignore invalid emphasize tags
 		}
 
-		var c_tag = curr_ctx()[0];
-		if (c_tag === e_tag) {
+		if (e_tag === curr_ctx()[0]) {
 			close_ctx(1);
 		} else {
 			open_ctx([e_tag]);
