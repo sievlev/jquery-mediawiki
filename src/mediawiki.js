@@ -224,6 +224,7 @@ $.mediawiki.autocorrect = function(callback) {
 	var g_stack = []; // stack of disbalanced items
 	var g_head = null; // head of list of unprocessing items
 	var g_tail = null; // tail of list of unprocessing items
+	var g_context = null; // current global context
 
 	function append_token(token) {
 		var item = { token: token, prev: g_tail, next: null };
@@ -332,24 +333,39 @@ $.mediawiki.autocorrect = function(callback) {
 			dump_tokens();
 			return;
 		}
-		switch(token[0]) {
+		var token_type = token[0];
+		switch(token_type) {
+			// block tokens
 			case "h":
 			case "p":
 			case "*":
 			case "#":
 				dump_tokens();
-				callback(token);
+				if (token_type === "p") {
+					g_context = null;
+				} else {
+					g_context = token;
+					callback(g_context);
+				}
 				break;
+			// inline tokens
+			case "b":
+			case "t":
 			case "'":
-				handle_emphasize(token);
-				break;
-			default:
-				if (g_head != null) {
+				if (!g_context || g_context[0] !== "p") {
+					g_context = ["p"];
+					callback(g_context);
+				}
+				if (token_type === "'") {
+					handle_emphasize(token);
+				} else if (g_head != null) {
 					append_token(token);
 				} else {
 					callback(token);
 				}
 				break;
+			default:
+				throw new Error("unsupported token");
 		}
 	};
 };
@@ -376,22 +392,14 @@ $.mediawiki.format = function (text) {
 
 	function handle_paragraph(s_token) {
 		close_ctx(null);
+		open_ctx(["p"]);
 	}
 
 	function handle_text(s_token) {
-		var c_tag = curr_ctx()[0];
-		if (c_tag !== "p" && c_tag !== "em" && c_tag !== "strong") {
-			close_ctx(null);
-			open_ctx(["p"]);
-		}
 		g_result.push(s_token[1]);
 	}
 
 	function handle_br(s_token) {
-		if (curr_ctx()[0] !== "p") {
-			close_ctx(null);
-			open_ctx(["p"]);
-		}
 		g_result.push(new Array(s_token[1] + 1).join("<br>"));
 	}
 
@@ -456,10 +464,6 @@ $.mediawiki.format = function (text) {
 		if (c_tag === e_tag) {
 			close_ctx(1);
 		} else {
-			if (c_tag !== "p" && c_tag !== other_tag) {
-				close_ctx(null);
-				open_ctx(["p"]);
-			}
 			open_ctx([e_tag]);
 		}
 	}
