@@ -72,6 +72,8 @@ module.DoubleLinkedList.prototype.unshift = function(data) {
 	}
 
 	++this.length;
+
+	return item;
 };
 
 }(jQuery));
