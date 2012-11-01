@@ -221,22 +221,9 @@ lib.tokenize = function tokenize(str, callback) {
 };
 
 lib.autocorrect = function(callback) {
-	var g_stack = []; // stack of disbalanced items
-	var g_head = null; // head of list of unprocessing items
-	var g_tail = null; // tail of list of unprocessing items
+	var g_stack = new lib.utils.DoubleLinkedList(); // stack of disbalanced items
+	var g_tokens = new lib.utils.DoubleLinkedList(); // head of list of unprocessing items
 	var g_context = null; // current global context
-
-	function append_token(token) {
-		var item = { token: token, prev: g_tail, next: null };
-		if (g_head == null) {
-			g_head = item;
-		}
-		if (g_tail != null) {
-			g_tail.next = item;
-		}
-		g_tail = item;
-		return item;
-	}
 
 	function dump_tokens() {
 		// automatically drop last unclosed tokens
@@ -244,86 +231,68 @@ lib.autocorrect = function(callback) {
 		while(g_stack.length) {
 			var last = g_stack.pop();
 			if (!last.next) {
-				g_tail = last.prev;
-				if (g_tail) {
-					g_tail.next = null;
-				} else {
-					g_head = null;
-				}
+				g_tokens.pop();
 			} else {
-				var l_tag = last.token[1];
+				var l_tag = last.data[1];
 				if (l_tag === 5) {
-					modify_token(last, 3, 2);
-					append_token(["'", 2]);
-					append_token(["'", 3]);
+					last.data = ["'", 3];
+					g_tokens.push(["'", 2], last);
+					g_tokens.push(["'", 2]);
+					g_tokens.push(["'", 3]);
 				} else {
-					append_token(["'", l_tag]);
+					g_tokens.push(["'", l_tag]);
 				}
 			}
 		}
 
-		var item = g_head;
-		while(item) {
-			callback(item.token);
-			item = item.next;
-		}
-		g_head = g_tail = null;
-	}
-
-	function modify_token(item, tag1, tag2) {
-		item.token[1] = tag1;
-		var item2 = { token: ["'", tag2], prev: item, next: item.next };
-		if (item.next) {
-			item.next.prev = item2;
-		}
-		item.next = item2;
-		if (item === g_tail) {
-			g_tail = item2;
-		}
+		g_tokens.foreach(callback);
+		g_tokens = new lib.utils.DoubleLinkedList();
 	}
 
 	function handle_emphasize(token) {
 		if (!g_stack.length) { // no unbalanced items
 			dump_tokens();
-			g_stack.push(append_token(token));
+			g_stack.push(g_tokens.push(token));
 			return;
 		}
 
 		var curr_tag = token[1];
-		var prev = g_stack[g_stack.length - 1]; // last unbalanced item
-		var prev_tag = prev.token[1];
+		var prev = g_stack.peek(); // last unbalanced item
+		var prev_tag = prev.data[1];
 
 		if (prev_tag === curr_tag) {
 			if (prev_tag === 5) {
-				modify_token(prev, 3, 2);
-				append_token(["'", 2]);
-				append_token(["'", 3]);
+				prev.data = ["'", 3];
+				g_tokens.push(["'", 2], prev);
+				g_tokens.push(["'", 2]);
+				g_tokens.push(["'", 3]);
 			} else {
-				append_token(token);
+				g_tokens.push(token);
 			}
 			g_stack.pop();
 		} else {
 			if (prev_tag === 5) {
-				modify_token(prev, 5 - curr_tag, curr_tag);
-				append_token(["'", curr_tag]);
+				prev.data = ["'", 5 - curr_tag];
+				g_tokens.push(["'", curr_tag], prev);
+				g_tokens.push(["'", curr_tag]);
 			} else if (curr_tag === 5) {
-				append_token(["'", prev_tag]);
+				g_tokens.push(["'", prev_tag]);
 				g_stack.pop();
 				var new_tag = 5 - prev_tag;
-				var new_curr = append_token(["'", new_tag]);
-				if (!g_stack.length || g_stack[g_stack.length-1].token[1] !== new_tag) {
+				var new_curr = g_tokens.push(["'", new_tag]);
+				if (!g_stack.length || g_stack.peek().data[1] !== new_tag) {
 					g_stack.push(new_curr);
 				} else {
 					g_stack.pop();
 				}
 			} else if (g_stack.length === 1) {
-				g_stack.push(append_token(token));
+				g_stack.push(g_tokens.push(token));
 			} else {
-				append_token(["'", prev_tag]);
+				g_tokens.push(["'", prev_tag]);
 				g_stack.pop();
-				append_token(token);
+				g_tokens.push(token);
 				g_stack.pop();
-				g_stack.push(append_token(["'", prev_tag]));
+				g_stack.push(g_tokens.push(["'", prev_tag]));
 			}
 		}
 	}
@@ -358,8 +327,8 @@ lib.autocorrect = function(callback) {
 				}
 				if (token_type === "'") {
 					handle_emphasize(token);
-				} else if (g_head != null) {
-					append_token(token);
+				} else if (g_tokens.length) {
+					g_tokens.push(token);
 				} else {
 					callback(token);
 				}
