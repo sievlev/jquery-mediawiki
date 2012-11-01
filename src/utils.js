@@ -10,6 +10,7 @@ module.ListIsEmptyError = function() {};
 module.DoubleLinkedList = function() {
 	this.head = null;
 	this.tail = null;
+	this.length = 0;
 };
 
 module.DoubleLinkedList.prototype.foreach = function(callback, reverse) {
@@ -36,6 +37,8 @@ module.DoubleLinkedList.prototype.pop = function() {
 		this.tail = this.head = null;
 	}
 
+	--this.length;
+
 	return item.data;
 };
 
@@ -54,6 +57,8 @@ module.DoubleLinkedList.prototype.push = function(data, item) {
 		item.next = item2;
 	}
 
+	++this.length;
+
 	return item2;
 };
 
@@ -65,6 +70,8 @@ module.DoubleLinkedList.prototype.unshift = function(data) {
 	} else {
 		this.head = this.tail = item;
 	}
+
+	++this.length;
 };
 
 }(jQuery));

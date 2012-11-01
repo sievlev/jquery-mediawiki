@@ -50,50 +50,63 @@ test("DoubleLinkedList, pop", function() {
 	lst.push(1);
 	lst.push(2);
 	listEqual(lst, [1, 2]);
+	equal(lst.length, 2);
 
 	equal(lst.pop(), 2);
 	listEqual(lst, [1]);
+	equal(lst.length, 1);
 
 	equal(lst.pop(), 1);
 	listEqual(lst, []);
 	equal(lst.head, null);
 	equal(lst.tail, null);
+	equal(lst.length, 0);
 });
 
 test("DoubleLinkedList, push after tail", function() {
 	var lst = new DoubleLinkedList();
+	equal(lst.length, 0);
 	equal(lst.head, null);
 	equal(lst.tail, null);
 
 	lst.push(1);
 	listEqual(lst, [1]);
+	equal(lst.length, 1);
 
 	lst.push(2);
 	listEqual(lst, [1, 2]);
+	equal(lst.length, 2);
 
 	lst.push(3);
 	listEqual(lst, [1, 2, 3]);
+	equal(lst.length, 3);
 });
 
 test("DoubleLinkedList, push after specified item", function() {
 	var lst = new DoubleLinkedList();
+	equal(lst.length, 0);
 
 	var item = lst.push(1);
 	lst.push(3);
 	listEqual(lst, [1, 3]);
+	equal(lst.length, 2);
 
 	lst.push(2, item);
 	listEqual(lst, [1, 2, 3]);
+	equal(lst.length, 3);
 });
 
 test("DoubleLinkedList, unshift", function() {
 	var lst = new DoubleLinkedList();
+	equal(lst.length, 0);
 
 	lst.unshift(1);
 	listEqual(lst, [1]);
+	equal(lst.length, 1);
 
 	lst.unshift(2);
 	listEqual(lst, [2, 1]);
+	equal(lst.length, 2);
 });
 
 }(jQuery));
