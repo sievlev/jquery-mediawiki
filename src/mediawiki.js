@@ -2,8 +2,9 @@
 
 (function($) {
 
-$.mediawiki = {};
-$.mediawiki.tokenize = function tokenize(str, callback) {
+var lib = $.mediawiki = $.mediawiki || {};
+
+lib.tokenize = function tokenize(str, callback) {
 	var g_curr_pos = 0; // current possition in stream
 	var g_last_pos = 0; // last position were token was found
 
@@ -219,7 +220,7 @@ $.mediawiki.tokenize = function tokenize(str, callback) {
 	handle_text(g_curr_pos);
 };
 
-$.mediawiki.autocorrect = function(callback) {
+lib.autocorrect = function(callback) {
 	var g_stack = []; // stack of disbalanced items
 	var g_head = null; // head of list of unprocessing items
 	var g_tail = null; // tail of list of unprocessing items
@@ -369,7 +370,7 @@ $.mediawiki.autocorrect = function(callback) {
 	};
 };
 
-$.mediawiki.format = function (text) {
+lib.format = function (text) {
 	var g_context = []; // current global context, paragraph, ordered or unordered list,
 	var g_result = []; // output
 
@@ -467,7 +468,7 @@ $.mediawiki.format = function (text) {
 		}
 	}
 
-	var corrector = $.mediawiki.autocorrect(function(token) {
+	var corrector = lib.autocorrect(function(token) {
 		switch (token[0][0]) {
 			case "p":
 				handle_paragraph(token);
@@ -492,7 +493,7 @@ $.mediawiki.format = function (text) {
 				throw new Error("invalid token");
 		}
 	});
-	$.mediawiki.tokenize(text, corrector);
+	lib.tokenize(text, corrector);
 	corrector(null); // flush buffers
 	close_ctx(null); // finally close all active contexts
 
