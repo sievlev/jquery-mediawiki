@@ -1,79 +1,101 @@
-// self-made linked list still faster then array
+// Self-made linked list still faster then array
+// This code inspired by linked list implementation from Linux kernel
 
 (function($) {
+"use strict";
 
 var lib = $.mediawiki = $.mediawiki || {};
 var module = lib.utils = {};
 
-module.ListIsEmptyError = function() {};
+// Common utilities
 
-module.DoubleLinkedList = function() {
-	this.head = null;
-	this.tail = null;
-	this.length = 0;
-};
+function list_init(head) {
+	head.next = head;
+	head.prev = head;
+	return head;
+}
 
-module.DoubleLinkedList.prototype.foreach = function(callback, reverse) {
-	reverse = reverse || false;
-	for(var head=reverse?this.tail:this.head; head; head = reverse?head.prev:head.next) {
-		callback(head.data);
+function list_add(prev, next, data) {
+	var item = { data: data, next: null, prev: null };
+	next.prev = item;
+	item.next = next;
+	item.prev = prev;
+	prev.next = item;
+
+	return item;
+}
+
+function list_del(next, prev) {
+	next.prev = prev;
+	prev.next = next;
+}
+
+function list_is_last(item) {
+	/*jshint validthis:true */
+	return item.next === this;
+}
+
+function list_foreach(callback) {
+	/*jshint validthis:true */
+	for(var pos = this.next; pos !== this; pos = pos.next) {
+		callback(pos.data);
 	}
-};
+}
 
-module.DoubleLinkedList.prototype.peek = function() {
-	return this.tail?this.tail.data:null;
-};
+function list_reverse_foreach(callback) {
+	/*jshint validthis:true */
+	for(var pos = this.prev; pos !== this; pos = pos.prev) {
+		callback(pos.data);
+	}
+}
 
-module.DoubleLinkedList.prototype.pop = function() {
-	if (!this.tail) {
+function list_push(data, pos) {
+	/*jshint validthis:true */
+	pos = pos || this.prev;
+	var item = list_add(pos, pos.next, data);
+	++this.length;
+	return item;
+}
+
+function list_pop() {
+	/*jshint validthis:true */
+	if (this.next === this) {
 		throw new module.ListIsEmptyError();
 	}
 
-	var item = this.tail;
-	if (this.tail.prev) {
-		this.tail = this.tail.prev;
-		this.tail.next = null;
-	} else {
-		this.tail = this.head = null;
-	}
-
+	/*jshint validthis:true */
+	var item = this.prev;
+	list_del(item.next, item.prev);
 	--this.length;
 
 	return item.data;
-};
+}
 
-module.DoubleLinkedList.prototype.push = function(data, item) {
-	item = item || this.tail;
-	var item2 = { next: item?item.next:null, prev: item, data: data };
-	if (item && item.next) {
-		item.next.prev = item2;
-	} else {
-		this.tail = item2;
-	}
-	if (!item2.prev) {
-		this.head = item2;
-	}
-	if (item) {
-		item.next = item2;
-	}
+function list_peek() {
+	/*jshint validthis:true */
+	return (this.prev !== this)?this.prev.data:null;
+}
 
+function list_unshift(data) {
+	/*jshint validthis:true */
+	var item = list_add(this, this.next, data);
 	++this.length;
-
-	return item2;
-};
-
-module.DoubleLinkedList.prototype.unshift = function(data) {
-	var item = { next: this.head, prev: null, data: data };
-	if (this.head) {
-		this.head.prev = item;
-		this.head = item;
-	} else {
-		this.head = this.tail = item;
-	}
-
-	++this.length;
-
 	return item;
+}
+
+module.ListIsEmptyError = function() {};
+
+module.linkedlist = function() {
+	return list_init({
+		is_last: list_is_last,
+		foreach: list_foreach,
+		length: 0,
+		push: list_push,
+		pop: list_pop,
+		peek: list_peek,
+		reverse_foreach: list_reverse_foreach,
+		unshift: list_unshift
+	});
 };
 
 }(jQuery));
