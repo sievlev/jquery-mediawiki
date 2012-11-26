@@ -1,6 +1,7 @@
 /// FIXME replace while(hasnext) with do-while(hasnext) ?
 
 (function($) {
+"use strict";
 
 var lib = $.mediawiki = $.mediawiki || {};
 
@@ -221,8 +222,8 @@ lib.tokenize = function tokenize(str, callback) {
 };
 
 lib.autocorrect = function(callback) {
-	var g_stack = new lib.utils.DoubleLinkedList(); // stack of disbalanced items
-	var g_tokens = new lib.utils.DoubleLinkedList(); // head of list of unprocessing items
+	var g_stack = lib.utils.linkedlist(); // stack of disbalanced items
+	var g_tokens = lib.utils.linkedlist(); // head of list of unprocessing items
 	var g_context = null; // current global context
 
 	function dump_tokens() {
@@ -230,7 +231,7 @@ lib.autocorrect = function(callback) {
 		// automatically close other unclosed tokens
 		while(g_stack.length) {
 			var last = g_stack.pop();
-			if (!last.next) {
+			if (g_tokens.is_last(last)) {
 				g_tokens.pop();
 			} else {
 				var l_tag = last.data[1];
@@ -246,7 +247,7 @@ lib.autocorrect = function(callback) {
 		}
 
 		g_tokens.foreach(callback);
-		g_tokens = new lib.utils.DoubleLinkedList();
+		g_tokens = lib.utils.linkedlist();
 	}
 
 	function handle_emphasize(token) {
