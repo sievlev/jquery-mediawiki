@@ -222,8 +222,8 @@ lib.tokenize = function tokenize(str, callback) {
 };
 
 lib.autocorrect = function(callback) {
-	var g_stack = lib.utils.linkedlist(); // stack of disbalanced items
-	var g_tokens = lib.utils.linkedlist(); // head of list of unprocessing items
+	var g_stack = lib.utils.LinkedList(); // stack of disbalanced items
+	var g_tokens = lib.utils.LinkedList(); // head of list of unprocessing items
 	var g_context = null; // current global context
 
 	function dump_tokens() {
@@ -247,7 +247,7 @@ lib.autocorrect = function(callback) {
 		}
 
 		g_tokens.foreach(callback);
-		g_tokens = lib.utils.linkedlist();
+		g_tokens = lib.utils.LinkedList();
 	}
 
 	function handle_emphasize(token) {

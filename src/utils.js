@@ -85,7 +85,7 @@ function list_unshift(data) {
 
 module.ListIsEmptyError = function() {};
 
-module.linkedlist = function() {
+module.LinkedList = function() {
 	return list_init({
 		is_last: list_is_last,
 		foreach: list_foreach,

@@ -20,7 +20,7 @@ function linkedlistEqual(lst, expected) {
 }
 
 test("linkedlist, constructor", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 	ok(lst.next === lst);
 	ok(lst.prev === lst);
 	ok(lst.length === 0);
@@ -34,7 +34,7 @@ test("linkedlist, constructor", function() {
 
 
 test("linkedlist, foreach", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 
 	var item1 = {data: 1, prev: lst};
 	lst.next = item1;
@@ -47,7 +47,7 @@ test("linkedlist, foreach", function() {
 });
 
 test("linkedlist, reverse_foreach", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 
 	var item1 = {data: 1, prev: lst};
 	lst.next = item1;
@@ -61,7 +61,7 @@ test("linkedlist, reverse_foreach", function() {
 });
 
 test("linkedlist, peek", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 
 	equal(lst.peek(), null);
 	lst.push(1);
@@ -71,7 +71,7 @@ test("linkedlist, peek", function() {
 });
 
 test("linkedlist, pop", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 
 	throws(function() { lst.pop(); }, ListIsEmptyError);
 
@@ -90,7 +90,7 @@ test("linkedlist, pop", function() {
 });
 
 test("linkedlist, push after specified item", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 	equal(lst.length, 0);
 
 	var item = lst.push(1);
@@ -104,7 +104,7 @@ test("linkedlist, push after specified item", function() {
 });
 
 test("linkedlist, push after tail", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 	equal(lst.length, 0);
 
 	lst.push(1);
@@ -121,7 +121,7 @@ test("linkedlist, push after tail", function() {
 });
 
 test("linkedlist, unshift", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 	equal(lst.length, 0);
 
 	lst.unshift(1);
@@ -134,8 +134,8 @@ test("linkedlist, unshift", function() {
 });
 
 test("linkedlist, object independance", function() {
-	var lst1 = linkedlist();
-	var lst2 = linkedlist();
+	var lst1 = $.mediawiki.utils.LinkedList();
+	var lst2 = $.mediawiki.utils.LinkedList();
 	ok(lst1 !== lst2);
 
 	lst1.push(1);
@@ -144,7 +144,7 @@ test("linkedlist, object independance", function() {
 });
 
 test("linkedlist, is last", function() {
-	var lst = linkedlist();
+	var lst = $.mediawiki.utils.LinkedList();
 
 	var item1 = lst.push(1);
 	ok(lst.is_last(item1) === true);
